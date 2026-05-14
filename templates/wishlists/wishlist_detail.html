@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}{{ wishlist.title }} — MyWishlist{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-2">{{ wishlist.title }}</h1>
+        <p class="text-muted mb-1">
+            Владелец: {{ wishlist.owner.email }}
+        </p>
+        {% if wishlist.description %}
+            <p class="mb-0">{{ wishlist.description }}</p>
+        {% endif %}
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'wishlists:export_csv' wishlist.pk %}" class="btn btn-outline-success btn-sm">
+            CSV
+        </a>
+        <a href="{% url 'wishlists:export_pdf' wishlist.pk %}" class="btn btn-outline-danger btn-sm">
+            PDF
+        </a>
+
+        {% if is_owner %}
+            <a href="{% url 'wishlists:wishlist_update' wishlist.pk %}" class="btn btn-outline-primary btn-sm">
+                Редактировать
+            </a>
+            <a href="{% url 'wishlists:wishlist_delete' wishlist.pk %}" class="btn btn-outline-danger btn-sm">
+                Удалить
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if is_owner %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Исполнители</h2>
+
+        {% if accesses %}
+            <ul class="list-group mb-3">
+                {% for access in accesses %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ access.user.email }}</span>
+                        <a href="{% url 'wishlists:remove_executor' access.pk %}" class="btn btn-outline-danger btn-sm">
+                            Удалить
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">Исполнители пока не назначены.</p>
+        {% endif %}
+
+        <form method="post" action="{% url 'wishlists:assign_executor' wishlist.pk %}" class="row g-2">
+            {% csrf_token %}
+            <div class="col-md-8">
+                {{ assign_form.email }}
+                {% for error in assign_form.email.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">Назначить</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h4 mb-0">Желания</h2>
+
+    {% if is_owner %}
+        <a href="{% url 'wishlists:item_create' wishlist.pk %}" class="btn btn-primary btn-sm">
+            Добавить желание
+        </a>
+    {% endif %}
+</div>
+
+{% if items %}
+    <div class="row g-3">
+        {% for item in items %}
+            <div class="col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h3 class="h5 card-title">{{ item.title }}</h3>
+
+                            {% if item.is_done %}
+                                <span class="badge bg-success item-status">{{ item.get_status_display }}</span>
+                            {% elif item.status == "in_progress" %}
+                                <span class="badge bg-warning text-dark item-status">{{ item.get_status_display }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary item-status">{{ item.get_status_display }}</span>
+                            {% endif %}
+                        </div>
+
+                        {% if item.description %}
+                            <p class="card-text">{{ item.description }}</p>
+                        {% endif %}
+
+                        <ul class="list-unstyled small text-muted">
+                            {% if item.product_url %}
+                                <li>
+                                    <strong>Ссылка:</strong>
+                                    <a href="{{ item.product_url }}" target="_blank">Открыть товар</a>
+                                </li>
+                            {% endif %}
+
+                            {% if item.approximate_price %}
+                                <li><strong>Цена:</strong> {{ item.approximate_price }}</li>
+                            {% endif %}
+
+                            <li><strong>Приоритет:</strong> {{ item.get_priority_display }}</li>
+                        </ul>
+
+                        <div class="d-flex gap-2 mb-3">
+                            <a href="{% url 'wishlists:item_update' item.pk %}" class="btn btn-outline-primary btn-sm">
+                                Изменить
+                            </a>
+
+                            {% if is_owner %}
+                                <a href="{% url 'wishlists:item_delete' item.pk %}" class="btn btn-outline-danger btn-sm">
+                                    Удалить
+                                </a>
+                            {% endif %}
+                        </div>
+
+                        <hr>
+
+                        <h4 class="h6">Комментарии</h4>
+
+                        {% if item.comments.all %}
+                            <ul class="list-group list-group-flush mb-3">
+                                {% for comment in item.comments.all %}
+                                    <li class="list-group-item px-0">
+                                        <div class="small text-muted">
+                                            {{ comment.author.email }} · {{ comment.created_at|date:"d.m.Y H:i" }}
+                                        </div>
+                                        <div>{{ comment.text }}</div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted small">Комментариев пока нет.</p>
+                        {% endif %}
+
+                        <form method="post" action="{% url 'wishlists:add_comment' item.pk %}">
+                            {% csrf_token %}
+                            {{ comment_form.text }}
+                            <button type="submit" class="btn btn-outline-primary btn-sm mt-2">
+                                Добавить комментарий
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p class="mb-2">В этом вишлисте пока нет желаний.</p>
+        {% if is_owner %}
+            <a href="{% url 'wishlists:item_create' wishlist.pk %}" class="btn btn-primary btn-sm">
+                Добавить первое желание
+            </a>
+        {% endif %}
+    </div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="{% url 'wishlists:dashboard' %}" class="btn btn-outline-secondary">
+        Назад к спискам
+    </a>
+</div>
+{% endblock %}
