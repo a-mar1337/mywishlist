@@ -204,3 +204,166 @@ class WishlistFormTests(TestCase):
         })
 
         self.assertFalse(form.is_valid())
+
+class WishlistViewTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            email="owner@example.com",
+            password="StrongPass123"
+        )
+        self.executor = User.objects.create_user(
+            email="executor@example.com",
+            password="StrongPass123"
+        )
+        self.other = User.objects.create_user(
+            email="other@example.com",
+            password="StrongPass123"
+        )
+
+        self.wishlist = Wishlist.objects.create(
+            owner=self.owner,
+            title="Birthday"
+        )
+
+        self.item = WishlistItem.objects.create(
+            wishlist=self.wishlist,
+            title="Headphones",
+            status=WishlistItem.STATUS_NOT_DONE,
+        )
+
+        WishlistAccess.objects.create(
+            wishlist=self.wishlist,
+            user=self.executor
+        )
+
+    def test_dashboard_requires_auth(self):
+        response = self.client.get(reverse("wishlists:dashboard"))
+
+        self.assertEqual(response.status_code, 302)
+
+    def test_dashboard_for_auth_user(self):
+        self.client.login(
+            username="owner@example.com",
+            password="StrongPass123"
+        )
+
+        response = self.client.get(reverse("wishlists:dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "wishlists/dashboard.html")
+
+    def test_owner_can_view_wishlist(self):
+        self.client.login(
+            username="owner@example.com",
+            password="StrongPass123"
+        )
+
+        response = self.client.get(
+            reverse("wishlists:wishlist_detail", kwargs={"pk": self.wishlist.pk})
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_executor_can_view_wishlist(self):
+        self.client.login(
+            username="executor@example.com",
+            password="StrongPass123"
+        )
+
+        response = self.client.get(
+            reverse("wishlists:wishlist_detail", kwargs={"pk": self.wishlist.pk})
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_other_user_cannot_view_wishlist(self):
+        self.client.login(
+            username="other@example.com",
+            password="StrongPass123"
+        )
+
+        response = self.client.get(
+            reverse("wishlists:wishlist_detail", kwargs={"pk": self.wishlist.pk})
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_owner_can_create_item(self):
+        self.client.login(
+            username="owner@example.com",
+            password="StrongPass123"
+        )
+
+        response = self.client.post(
+            reverse("wishlists:item_create", kwargs={"wishlist_pk": self.wishlist.pk}),
+            {
+                "title": "Мышка",
+                "description": "",
+                "product_url": "",
+                "approximate_price": "",
+                "priority": WishlistItem.PRIORITY_MEDIUM,
+                "status": WishlistItem.STATUS_NOT_DONE,
+            }
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(WishlistItem.objects.filter(title="Мышка").exists())
+
+    def test_executor_can_update_status(self):
+        self.client.login(
+            username="executor@example.com",
+            password="StrongPass123"
+        )
+
+        response = self.client.post(
+            reverse("wishlists:item_update", kwargs={"pk": self.item.pk}),
+            {
+                "title": self.item.title,
+                "description": self.item.description,
+                "product_url": self.item.product_url,
+                "approximate_price": "",
+                "priority": WishlistItem.PRIORITY_MEDIUM,
+                "status": WishlistItem.STATUS_DONE,
+            }
+        )
+
+        self.item.refresh_from_db()
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.item.status, WishlistItem.STATUS_DONE)
+
+    def test_anonymous_cannot_export_csv(self):
+        response = self.client.get(
+            reverse("wishlists:export_csv", kwargs={"pk": self.wishlist.pk})
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+    def test_owner_can_export_csv(self):
+        self.client.login(
+            username="owner@example.com",
+            password="StrongPass123"
+        )
+
+        response = self.client.get(
+            reverse("wishlists:export_csv", kwargs={"pk": self.wishlist.pk})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
+
+    def test_add_comment(self):
+        self.client.login(
+            username="executor@example.com",
+            password="StrongPass123"
+        )
+
+        response = self.client.post(
+            reverse("wishlists:add_comment", kwargs={"item_pk": self.item.pk}),
+            {
+                "text": "Сделаю позже"
+            }
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(ItemComment.objects.filter(text="Сделаю позже").exists())
