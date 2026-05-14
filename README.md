@@ -97,7 +97,7 @@ SECRET_KEY=your-secret-key
 DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost
 CSRF_TRUSTED_ORIGINS=
-TIME_ZONE=Europe/Warsaw
+TIME_ZONE=Europe/Moscow
 
 DB_ENGINE=django.db.backends.sqlite3
 DB_NAME=db.sqlite3
@@ -152,7 +152,7 @@ SECRET_KEY=your-secret-key
 DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost
 CSRF_TRUSTED_ORIGINS=
-TIME_ZONE=Europe/Warsaw
+TIME_ZONE=Europe/Moscow
 
 DB_ENGINE=django.db.backends.sqlite3
 DB_NAME=db.sqlite3
@@ -213,11 +213,7 @@ Workflow запускается:
 8. указать путь к static-файлам;
 9. перезагрузить web-приложение.
 
-Подробная инструкция находится в файле:
 
-```text
-DEPLOY_PYTHONANYWHERE.md
-```
 
 ## Авторизация и доступ
 
