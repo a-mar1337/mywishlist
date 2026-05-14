@@ -8,6 +8,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import AssignExecutorForm, ItemCommentForm, WishlistForm, WishlistItemForm
 from .models import ItemComment, Wishlist, WishlistAccess, WishlistItem
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
 def user_can_access_wishlist(user, wishlist):
@@ -206,3 +210,70 @@ def add_comment_view(request, item_pk):
             messages.success(request, "Комментарий добавлен.")
 
     return redirect("wishlists:wishlist_detail", pk=wishlist.pk)
+
+@login_required
+def export_csv_view(request, pk):
+    wishlist = get_object_or_404(Wishlist, pk=pk)
+
+    if not user_can_access_wishlist(request.user, wishlist):
+        raise PermissionDenied
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="wishlist_{wishlist.pk}.csv"'
+    response.write("\ufeff")
+
+    writer = csv.writer(response)
+    writer.writerow(["Название", "Описание", "Ссылка", "Цена", "Приоритет", "Статус"])
+
+    for item in wishlist.items.all():
+        writer.writerow([
+            item.title,
+            item.description,
+            item.product_url,
+            item.approximate_price or "",
+            item.get_priority_display(),
+            item.get_status_display(),
+        ])
+
+    return response
+
+
+@login_required
+def export_pdf_view(request, pk):
+    wishlist = get_object_or_404(Wishlist, pk=pk)
+
+    if not user_can_access_wishlist(request.user, wishlist):
+        raise PermissionDenied
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="wishlist_{wishlist.pk}.pdf"'
+
+    document = SimpleDocTemplate(response, pagesize=A4)
+    styles = getSampleStyleSheet()
+
+    elements = [
+        Paragraph(f"Wishlist: {wishlist.title}", styles["Title"]),
+        Spacer(1, 12),
+    ]
+
+    data = [["Название", "Цена", "Приоритет", "Статус"]]
+
+    for item in wishlist.items.all():
+        data.append([
+            Paragraph(item.title, styles["BodyText"]),
+            str(item.approximate_price or ""),
+            item.get_priority_display(),
+            item.get_status_display(),
+        ])
+
+    table = Table(data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+    ]))
+
+    elements.append(table)
+    document.build(elements)
+
+    return response
