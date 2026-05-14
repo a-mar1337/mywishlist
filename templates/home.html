@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Главная — MyWishlist{% endblock %}
+
+{% block content %}
+<div class="row align-items-center">
+    <div class="col-lg-7">
+        <h1 class="display-5 fw-bold">MyWishlist</h1>
+        <p class="lead">
+            Веб-приложение для создания списков желаний, добавления товаров
+            и назначения исполнителей.
+        </p>
+
+        {% if user.is_authenticated %}
+            <a href="{% url 'wishlists:dashboard' %}" class="btn btn-primary btn-lg">
+                Перейти к моим спискам
+            </a>
+        {% else %}
+            <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg me-2">
+                Начать
+            </a>
+            <a href="{% url 'accounts:login' %}" class="btn btn-outline-secondary btn-lg">
+                Войти
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-5 mt-4 mt-lg-0">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Возможности</h5>
+                <ul class="mb-0">
+                    <li>Создание вишлистов</li>
+                    <li>Добавление желаний</li>
+                    <li>Назначение исполнителей</li>
+                    <li>Комментарии и статусы</li>
+                    <li>Экспорт CSV/PDF</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

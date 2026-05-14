@@ -1,0 +1,45 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    border-radius: 14px;
+}
+
+.navbar-brand {
+    font-weight: 700;
+}
+
+.page-title {
+    margin-bottom: 24px;
+}
+
+.form-card {
+    max-width: 680px;
+    margin: 0 auto;
+}
+
+.item-status {
+    font-size: 0.875rem;
+}
+
+.footer {
+    margin-top: auto;
+}
+
+.empty-state {
+    padding: 32px;
+    border: 1px dashed #ced4da;
+    border-radius: 12px;
+    background-color: #fff;
+    text-align: center;
+}
+
+.wishlist-card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wishlist-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+}
