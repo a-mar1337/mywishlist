@@ -99,3 +99,110 @@ def wishlist_delete_view(request, pk):
         return redirect("wishlists:dashboard")
 
     return render(request, "wishlists/confirm_delete.html", {"object": wishlist})
+
+@login_required
+def item_create_view(request, wishlist_pk):
+    wishlist = get_object_or_404(Wishlist, pk=wishlist_pk, owner=request.user)
+
+    if request.method == "POST":
+        form = WishlistItemForm(request.POST)
+
+        if form.is_valid():
+            item = form.save(commit=False)
+            item.wishlist = wishlist
+            item.save()
+            messages.success(request, "Желание добавлено.")
+            return redirect("wishlists:wishlist_detail", pk=wishlist.pk)
+    else:
+        form = WishlistItemForm()
+
+    return render(request, "wishlists/item_form.html", {"form": form, "wishlist": wishlist})
+
+
+@login_required
+def item_update_view(request, pk):
+    item = get_object_or_404(WishlistItem, pk=pk)
+    wishlist = item.wishlist
+
+    if not user_can_access_wishlist(request.user, wishlist):
+        raise PermissionDenied
+
+    if request.method == "POST":
+        form = WishlistItemForm(request.POST, instance=item)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Желание обновлено.")
+            return redirect("wishlists:wishlist_detail", pk=wishlist.pk)
+    else:
+        form = WishlistItemForm(instance=item)
+
+    return render(request, "wishlists/item_form.html", {"form": form, "wishlist": wishlist, "item": item})
+
+
+@login_required
+def item_delete_view(request, pk):
+    item = get_object_or_404(WishlistItem, pk=pk)
+    wishlist = item.wishlist
+
+    if wishlist.owner != request.user:
+        raise PermissionDenied
+
+    if request.method == "POST":
+        item.delete()
+        messages.success(request, "Желание удалено.")
+        return redirect("wishlists:wishlist_detail", pk=wishlist.pk)
+
+    return render(request, "wishlists/confirm_delete.html", {"object": item})
+
+
+@login_required
+def assign_executor_view(request, pk):
+    wishlist = get_object_or_404(Wishlist, pk=pk, owner=request.user)
+
+    if request.method == "POST":
+        form = AssignExecutorForm(request.POST, wishlist=wishlist)
+
+        if form.is_valid():
+            executor = form.cleaned_data["user"]
+            WishlistAccess.objects.create(wishlist=wishlist, user=executor)
+            messages.success(request, "Исполнитель назначен.")
+        else:
+            messages.error(request, "Не удалось назначить исполнителя.")
+
+    return redirect("wishlists:wishlist_detail", pk=wishlist.pk)
+
+
+@login_required
+def remove_executor_view(request, pk):
+    access = get_object_or_404(WishlistAccess, pk=pk)
+
+    if access.wishlist.owner != request.user:
+        raise PermissionDenied
+
+    wishlist_pk = access.wishlist.pk
+    access.delete()
+    messages.success(request, "Исполнитель удалён.")
+
+    return redirect("wishlists:wishlist_detail", pk=wishlist_pk)
+
+
+@login_required
+def add_comment_view(request, item_pk):
+    item = get_object_or_404(WishlistItem, pk=item_pk)
+    wishlist = item.wishlist
+
+    if not user_can_access_wishlist(request.user, wishlist):
+        raise PermissionDenied
+
+    if request.method == "POST":
+        form = ItemCommentForm(request.POST)
+
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.item = item
+            comment.author = request.user
+            comment.save()
+            messages.success(request, "Комментарий добавлен.")
+
+    return redirect("wishlists:wishlist_detail", pk=wishlist.pk)
