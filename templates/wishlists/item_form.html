@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if item %}Редактировать желание{% else %}Добавить желание{% endif %} — MyWishlist
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm form-card">
+    <div class="card-body">
+        <h1 class="h3 mb-4">
+            {% if item %}Редактировать желание{% else %}Добавить желание{% endif %}
+        </h1>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label class="form-label" for="{{ form.title.id_for_label }}">Название</label>
+                {{ form.title }}
+                {% for error in form.title.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="{{ form.description.id_for_label }}">Описание</label>
+                {{ form.description }}
+                {% for error in form.description.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="{{ form.product_url.id_for_label }}">Ссылка на товар</label>
+                {{ form.product_url }}
+                {% for error in form.product_url.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label" for="{{ form.approximate_price.id_for_label }}">Цена</label>
+                    {{ form.approximate_price }}
+                    {% for error in form.approximate_price.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label class="form-label" for="{{ form.priority.id_for_label }}">Приоритет</label>
+                    {{ form.priority }}
+                    {% for error in form.priority.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label class="form-label" for="{{ form.status.id_for_label }}">Статус</label>
+                    {{ form.status }}
+                    {% for error in form.status.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+
+            {% if wishlist %}
+                <a href="{% url 'wishlists:wishlist_detail' wishlist.pk %}" class="btn btn-outline-secondary">
+                    Назад
+                </a>
+            {% else %}
+                <a href="{% url 'wishlists:dashboard' %}" class="btn btn-outline-secondary">
+                    Назад
+                </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}
