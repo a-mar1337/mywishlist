@@ -4,8 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from .forms import EmailLoginForm, ProfileForm, RegisterForm
+import logging
 
-
+logger = logging.getLogger(__name__)
 def register_view(request):
     if request.user.is_authenticated:
         return redirect("wishlists:dashboard")
@@ -15,6 +16,7 @@ def register_view(request):
 
         if form.is_valid():
             user = form.save()
+            logger.info("New user registered: %s", user.email)
             login(request, user)
             messages.success(request, "Регистрация прошла успешно.")
             return redirect("wishlists:dashboard")
@@ -33,9 +35,12 @@ def login_view(request):
 
         if form.is_valid():
             user = form.cleaned_data["user"]
+            logger.info("User logged in: %s", user.email)
             login(request, user)
             messages.success(request, "Вы успешно вошли в аккаунт.")
             return redirect("wishlists:dashboard")
+        else:
+            logger.warning("Failed login attempt")
     else:
         form = EmailLoginForm()
 
@@ -45,6 +50,7 @@ def login_view(request):
 @login_required
 def logout_view(request):
     if request.method == "POST":
+        logger.info("User logged out: %s", request.user.email)
         logout(request)
         messages.success(request, "Вы вышли из аккаунта.")
         return redirect("home")
@@ -61,6 +67,7 @@ def profile_view(request):
 
         if form.is_valid():
             form.save()
+            logger.info("Profile updated: %s", request.user.email)
             messages.success(request, "Профиль обновлён.")
             return redirect("accounts:profile")
     else:

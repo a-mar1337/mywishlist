@@ -9,3 +9,4 @@ media/
 logs/*.log
 .idea/
 .vscode/
+logs/*.log
