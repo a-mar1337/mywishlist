@@ -32,6 +32,16 @@ class RegisterForm(UserCreationForm):
             raise forms.ValidationError("Пользователь с таким email уже существует.")
 
         return email
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data["email"].lower()
+        user.username = user.email
+
+        if commit:
+            user.save()
+
+        return user
 
 
 class EmailLoginForm(forms.Form):

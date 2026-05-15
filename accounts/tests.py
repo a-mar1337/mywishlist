@@ -76,6 +76,20 @@ class AccountFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
 
+    def test_register_form_save_sets_username(self):
+        form = RegisterForm(data={
+            "email": "saved@example.com",
+            "password1": "StrongPass123",
+            "password2": "StrongPass123",
+        })
+
+        self.assertTrue(form.is_valid())
+
+        user = form.save()
+
+        self.assertEqual(user.email, "saved@example.com")
+        self.assertEqual(user.username, "saved@example.com")
+
 
 class AccountViewTests(TestCase):
     def test_register_view_status_and_template(self):
@@ -110,3 +124,16 @@ class AccountViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "accounts/profile.html")
+
+    def test_register_view_creates_user(self):
+        response = self.client.post(reverse("accounts:register"), {
+            "email": "view@example.com",
+            "password1": "StrongPass123",
+            "password2": "StrongPass123",
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(User.objects.filter(email="view@example.com").exists())
+
+        user = User.objects.get(email="view@example.com")
+        self.assertEqual(user.username, "view@example.com")
